@@ -66,28 +66,20 @@ def baixar(url, opcao, organizar_musica, status):
     # Configurações download
     ydl_opts = {
         'progress_hooks': [progresso_hook],
-        'ignoreerrors': True,
-        'skip_unavailable_fragments': True,
-        'quiet': True,
-        'nocheckcertificate': True,
-        'no_warnings': True,
+        'quiet': False,
+        'verbose': True,
+        'no_warnings': False,
         'force_ipv4': True,
-        'js_runtimes': {
-            'node': {}
-        },
         'retries': 10,
         'fragment_retries': 10,
+        'skip_unavailable_fragments': True,
+        'nocheckcertificate': True,
         'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0'
         },
         'extractor_args': {
             'youtube': {
-                'player_client': [
-                    'android',
-                    'tv',
-                    'web_embedded',
-                    'ios'
-                ]
+                'player_client': ['android', 'tv']
             }
         }
     }
@@ -131,11 +123,15 @@ def baixar(url, opcao, organizar_musica, status):
         })
 
     # Download
-    with YoutubeDL(ydl_opts) as ydl:
-        setattr
-        ydl.download([url])
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        status("✅ Download finalizado.")
 
-    status("✅ Download finalizado.")
+    except Exception as e:
+        status("❌ Erro ao baixar:")
+        status(str(e))
+    
 
     # 🎵 Organização automática
     if opcao == "2" and organizar_musica:

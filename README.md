@@ -1,34 +1,32 @@
-# YouTube Downloader
-Meu primeiro projeto em Python com interface gráfica usando Tkinter.
-
 # YouTube Downloader (Python + Tkinter)
-Aplicação gráfica para baixar vídeos (MP4) ou áudios (MP3) do YouTube,
+
+Aplicação gráfica em Python para baixar vídeos (MP4) ou áudios (MP3) do YouTube,
 com suporte a playlists e organização automática de músicas.
 
-## Requisitos
+Este é meu primeiro projeto em Python com interface gráfica usando Tkinter.
+
+---
+
+## 🚀 Funcionalidades
+- Download de vídeos em MP4
+- Extração de áudio em MP3
+- Suporte a playlists
+- Interface gráfica simples e intuitiva
+- Organização automática de arquivos
+- Suporte a cookies (opcional)
+
+---
+
+## 📦 Requisitos
 - Python 3.10+
 - FFmpeg (no PATH)
 - Node.js (opcional, recomendado)
 
-```md
-## Instalação
+---
+
+## 🔧 Instalação
 
 ```bash
 git clone https://github.com/seu-usuario/seu-repo.git
-cd Download
+cd seu-repo
 python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
-
-## Como usar
-1. Execute:
-```bash
-python download.py
-
-
-## Cookies (opcional)
-Cookies são usados apenas para acessar conteúdo privado.
-Nunca compartilhe seus cookies.
-
-O arquivo `cookies.txt` não deve ser enviado ao GitHub.
-
