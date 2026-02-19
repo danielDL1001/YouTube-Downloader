@@ -4,6 +4,8 @@ from tkinter import messagebox
 from threading import Thread
 from yt_dlp import YoutubeDL
 from mutagen.easyid3 import EasyID3
+import shutil
+import sys
 import os
 
 # 🎨 Temas
@@ -31,7 +33,6 @@ pasta_mp3 = os.path.join(HOME, "Downloads", "Audios_YouTube")
 pasta_mp4 = os.path.join(HOME, "Downloads", "Videos_YouTube")
 os.makedirs(pasta_mp3, exist_ok=True)
 os.makedirs(pasta_mp4, exist_ok=True)
-
 
 def baixar(url, opcao, organizar_musica, status):
     # Opções inválidas
@@ -66,23 +67,32 @@ def baixar(url, opcao, organizar_musica, status):
     # Configurações download
     ydl_opts = {
         'progress_hooks': [progresso_hook],
-        'quiet': False,
-        'verbose': True,
+        'quiet': True,
         'no_warnings': False,
         'force_ipv4': True,
         'retries': 10,
         'fragment_retries': 10,
         'skip_unavailable_fragments': True,
         'nocheckcertificate': True,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0'
+
+        'js_runtimes': {
+            'node': {}
         },
+
+        'ffmpeg_location': 'ffmpeg',
+        'restrictfilenames': True,
+
         'extractor_args': {
             'youtube': {
-                'player_client': ['android', 'tv']
+                'player_client': [
+                    'android',
+                    'ios',
+                    'web_embedded'
+                ]
             }
         }
     }
+
 
     # Vídeo MP4:
     if opcao == "1":
@@ -107,15 +117,13 @@ def baixar(url, opcao, organizar_musica, status):
             'download_archive': 'downloaded_audio.txt',
             'format': 'bestaudio/best',
             'postprocessors': [
-                {
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                },
-                {
-                    'key': 'FFmpegMetadata',
-                }
+                    {
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }
             ],
+            'final_ext': 'mp3',
             'outtmpl': (
                 os.path.join(pasta_mp3, '%(playlist_title|single)s',
                              '%(channel)s - %(title)s.%(ext)s')
@@ -169,6 +177,26 @@ def organizar_mp3(status):
             except Exception as e:
                 status(f"❌ Erro em {arquivo}: {e}")
 
+def diagnostico():
+    print("🔎 Diagnóstico do ambiente:")
+
+    print(f"• Python: {sys.version.split()[0]}")
+
+    if shutil.which("ffmpeg"):
+        print("• FFmpeg: OK")
+    else:
+        print("❌ FFmpeg: NÃO encontrado")
+
+    if shutil.which("node"):
+        print("• Node.js: OK")
+    else:
+        print("❌ Node.js: NÃO encontrado")
+
+    try:
+        import yt_dlp
+        print(f"• yt-dlp: OK ({yt_dlp.version.__version__})")
+    except Exception as e:
+        print(f"❌ yt-dlp: erro ({e})")
 
 def iniciar_download():
     progress["value"] = 0
@@ -180,15 +208,18 @@ def iniciar_download():
         return
 
     Thread(
-        target=baixar,
-        args=(
-            entry_url.get().strip(),
-            formato.get(),
-            var_organizar.get(),
-            log
+        target=lambda: (
+            diagnostico(log),
+            baixar(
+                entry_url.get().strip(),
+                formato.get(),
+                var_organizar.get(),
+                log
+            )
         ),
         daemon=True
     ).start()
+
 
 
 def log(msg):
@@ -242,6 +273,7 @@ def alternar_tema():
     tema_atual = tema_claro if tema_atual == tema_escuro else tema_escuro
     aplicar_tema()
 
+diagnostico()
 
 # Janela
 janela = tk.Tk()
