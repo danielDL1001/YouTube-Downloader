@@ -27,6 +27,10 @@ tema_escuro = {
 
 tema_atual = tema_escuro
 
+# Caminhos para cookies e arquivos de histórico
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+COOKIE_PATH = os.path.join(BASE_DIR, 'cookies.txt')
+
 # Pastas de download
 HOME = os.path.expanduser("~")
 pasta_mp3 = os.path.join(HOME, "Downloads", "Audios_YouTube")
@@ -67,32 +71,47 @@ def baixar(url, opcao, organizar_musica, status):
     # Configurações download
     ydl_opts = {
         'progress_hooks': [progresso_hook],
-        'quiet': True,
+
+        # logs
+        'quiet': False,
+        'verbose': True,
         'no_warnings': False,
+
+        # rede / estabilidade
         'force_ipv4': True,
         'retries': 10,
         'fragment_retries': 10,
         'skip_unavailable_fragments': True,
         'nocheckcertificate': True,
 
+        # opções avançadas do nodeJS (para vídeos com player complexo)
         'js_runtimes': {
-            'node': {}
+            'node': {
+                'cmd': 'node'
+            }
         },
 
-        'ffmpeg_location': 'ffmpeg',
-        'restrictfilenames': True,
+        # headers
+        'http_headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        },
 
+        # extratores
         'extractor_args': {
             'youtube': {
                 'player_client': [
                     'android',
-                    'ios',
-                    'web_embedded'
+                    'tv'
                 ]
             }
         }
     }
 
+    if os.path.exists(COOKIE_PATH):
+        ydl_opts['cookiefile'] = COOKIE_PATH
+        status("🍪 cookies.txt carregado...")
+    else:
+        status("❌ cookies.txt não encontrado (modo público).")
 
     # Vídeo MP4:
     if opcao == "1":
@@ -130,16 +149,16 @@ def baixar(url, opcao, organizar_musica, status):
             ),
         })
 
+    status("🟡 Antes do yt-dlp")
+    print("ANTES DO YDL")
     # Download
     try:
         with YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         status("✅ Download finalizado.")
-
     except Exception as e:
-        status("❌ Erro ao baixar:")
+        status("❌ Erro durante o download:")
         status(str(e))
-    
 
     # 🎵 Organização automática
     if opcao == "2" and organizar_musica:
