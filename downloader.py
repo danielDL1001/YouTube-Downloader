@@ -209,7 +209,7 @@ def iniciar_download():
 
     Thread(
         target=lambda: (
-            diagnostico(log),
+            diagnostico(),
             baixar(
                 entry_url.get().strip(),
                 formato.get(),
@@ -219,7 +219,6 @@ def iniciar_download():
         ),
         daemon=True
     ).start()
-
 
 
 def log(msg):
@@ -273,7 +272,6 @@ def alternar_tema():
     tema_atual = tema_claro if tema_atual == tema_escuro else tema_escuro
     aplicar_tema()
 
-diagnostico()
 
 # Janela
 janela = tk.Tk()
