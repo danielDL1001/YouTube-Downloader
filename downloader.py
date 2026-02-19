@@ -4,6 +4,8 @@ from tkinter import messagebox
 from threading import Thread
 from yt_dlp import YoutubeDL
 from mutagen.easyid3 import EasyID3
+import shutil
+import sys
 import os
 
 # 🎨 Temas
@@ -31,7 +33,6 @@ pasta_mp3 = os.path.join(HOME, "Downloads", "Audios_YouTube")
 pasta_mp4 = os.path.join(HOME, "Downloads", "Videos_YouTube")
 os.makedirs(pasta_mp3, exist_ok=True)
 os.makedirs(pasta_mp4, exist_ok=True)
-
 
 def baixar(url, opcao, organizar_musica, status):
     # Opções inválidas
@@ -66,31 +67,32 @@ def baixar(url, opcao, organizar_musica, status):
     # Configurações download
     ydl_opts = {
         'progress_hooks': [progresso_hook],
-        'ignoreerrors': True,
-        'skip_unavailable_fragments': True,
         'quiet': True,
-        'nocheckcertificate': True,
-        'no_warnings': True,
+        'no_warnings': False,
         'force_ipv4': True,
+        'retries': 10,
+        'fragment_retries': 10,
+        'skip_unavailable_fragments': True,
+        'nocheckcertificate': True,
+
         'js_runtimes': {
             'node': {}
         },
-        'retries': 10,
-        'fragment_retries': 10,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
+
+        'ffmpeg_location': 'ffmpeg',
+        'restrictfilenames': True,
+
         'extractor_args': {
             'youtube': {
                 'player_client': [
                     'android',
-                    'tv',
-                    'web_embedded',
-                    'ios'
+                    'ios',
+                    'web_embedded'
                 ]
             }
         }
     }
+
 
     # Vídeo MP4:
     if opcao == "1":
@@ -115,15 +117,13 @@ def baixar(url, opcao, organizar_musica, status):
             'download_archive': 'downloaded_audio.txt',
             'format': 'bestaudio/best',
             'postprocessors': [
-                {
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                },
-                {
-                    'key': 'FFmpegMetadata',
-                }
+                    {
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    }
             ],
+            'final_ext': 'mp3',
             'outtmpl': (
                 os.path.join(pasta_mp3, '%(playlist_title|single)s',
                              '%(channel)s - %(title)s.%(ext)s')
@@ -131,11 +131,15 @@ def baixar(url, opcao, organizar_musica, status):
         })
 
     # Download
-    with YoutubeDL(ydl_opts) as ydl:
-        setattr
-        ydl.download([url])
+    try:
+        with YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        status("✅ Download finalizado.")
 
-    status("✅ Download finalizado.")
+    except Exception as e:
+        status("❌ Erro ao baixar:")
+        status(str(e))
+    
 
     # 🎵 Organização automática
     if opcao == "2" and organizar_musica:
@@ -173,6 +177,26 @@ def organizar_mp3(status):
             except Exception as e:
                 status(f"❌ Erro em {arquivo}: {e}")
 
+def diagnostico():
+    print("🔎 Diagnóstico do ambiente:")
+
+    print(f"• Python: {sys.version.split()[0]}")
+
+    if shutil.which("ffmpeg"):
+        print("• FFmpeg: OK")
+    else:
+        print("❌ FFmpeg: NÃO encontrado")
+
+    if shutil.which("node"):
+        print("• Node.js: OK")
+    else:
+        print("❌ Node.js: NÃO encontrado")
+
+    try:
+        import yt_dlp
+        print(f"• yt-dlp: OK ({yt_dlp.version.__version__})")
+    except Exception as e:
+        print(f"❌ yt-dlp: erro ({e})")
 
 def iniciar_download():
     progress["value"] = 0
@@ -184,12 +208,14 @@ def iniciar_download():
         return
 
     Thread(
-        target=baixar,
-        args=(
-            entry_url.get().strip(),
-            formato.get(),
-            var_organizar.get(),
-            log
+        target=lambda: (
+            diagnostico(),
+            baixar(
+                entry_url.get().strip(),
+                formato.get(),
+                var_organizar.get(),
+                log
+            )
         ),
         daemon=True
     ).start()
