@@ -8,7 +8,7 @@ import shutil
 import sys
 import os
 
-# 🎨 Temas
+# Temas
 tema_claro = {
     "bg": "#f2f2f2",
     "fg": "#000000",
@@ -27,6 +27,10 @@ tema_escuro = {
 
 tema_atual = tema_escuro
 
+# Fontes
+FONTE_PADRAO = ("Segoe UI", 10)
+FONTE_TITULO = ("Segoe UI", 14, "bold")
+
 # Pastas de download
 HOME = os.path.expanduser("~")
 pasta_mp3 = os.path.join(HOME, "Downloads", "Audios_YouTube")
@@ -36,116 +40,119 @@ os.makedirs(pasta_mp4, exist_ok=True)
 
 
 def baixar(url, opcao, organizar_musica, status):
-    # Opções inválidas
-    if not url:
-        status("❌ Nenhum link informado.")
-        return
-
-    # Reconhecer quantidade de itens (vídeo ou playlist)
     try:
-        with YoutubeDL({'quiet': True}) as ydl:
-            info = ydl.extract_info(url, download=False)
-    except Exception as e:
-        status(f"❌ Erro ao acessar vídeo/playlist:")
-        status(str(e))
-        return
+        # Opções inválidas
+        if not url:
+            status("❌ Nenhum link informado.")
+            return
 
-    total = len(info['entries']) if 'entries' in info else 1
-    concluidos = 0
+        # Reconhecer quantidade de itens (vídeo ou playlist)
+        try:
+            with YoutubeDL({'quiet': True}) as ydl:
+                info = ydl.extract_info(url, download=False)
+        except Exception as e:
+            status(f"❌ Erro ao acessar vídeo/playlist:")
+            status(str(e))
+            return
 
-    def progresso_hook(d):
-        nonlocal concluidos
-        if d['status'] == 'finished':
-            concluidos += 1
-            pct = int((concluidos / total) * 100)
-            janela.after(0, lambda: (
-                progress.config(value=pct),
-                label_status.config(
-                    text=f"Baixando... {concluidos} de {total} ({pct}%)"
-                )
-            ))
+        total = len(info['entries']) if 'entries' in info else 1
+        concluidos = 0
 
-    # Configurações download
-    ydl_opts = {
-        'progress_hooks': [progresso_hook],
-        'ignoreerrors': True,
-        'skip_unavailable_fragments': True,
-        'quiet': True,
-        'nocheckcertificate': True,
-        'no_warnings': True,
-        'force_ipv4': True,
-        'js_runtimes': {
-            'node': {}
-        },
-        'retries': 10,
-        'fragment_retries': 10,
-        'http_headers': {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        },
-        'extractor_args': {
-            'youtube': {
-                'player_client': [
-                    'android',
-                    'tv',
-                    'web_embedded',
-                    'ios'
-                ]
+        def progresso_hook(d):
+            nonlocal concluidos
+            if d['status'] == 'finished':
+                concluidos += 1
+                pct = int((concluidos / total) * 100)
+                janela.after(0, lambda: (
+                    progress.config(value=pct),
+                    label_status.config(
+                        text=f"Baixando... {concluidos} de {total} ({pct}%)"
+                    )
+                ))
+
+        # Configurações download
+        ydl_opts = {
+            'progress_hooks': [progresso_hook],
+            'ignoreerrors': True,
+            'skip_unavailable_fragments': True,
+            'quiet': True,
+            'nocheckcertificate': True,
+            'no_warnings': True,
+            'force_ipv4': True,
+            'js_runtimes': {
+                'node': {}
+            },
+            'retries': 10,
+            'fragment_retries': 10,
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            },
+            'extractor_args': {
+                'youtube': {
+                    'player_client': [
+                        'android',
+                        'tv',
+                        'web_embedded',
+                        'ios'
+                    ]
+                }
             }
         }
-    }
 
-    # Vídeo MP4:
-    if opcao == "1":
-        ydl_opts.update({
-            # Historico de downloads mp4
-            'download_archive': 'downloaded_video.txt',
-            # Forçar vídeo MP4 + áudio M4A (100% compatíveis)
-            'format': '(bv*[ext=mp4]/bv*)+(ba[ext=m4a]/ba)/b',
-            # Garante merge final em MP4
-            'merge_output_format': 'mp4',
-            # Não extrair áudio
-            'outtmpl': (
-                os.path.join(pasta_mp4, '%(playlist_title|single)s',
-                             '%(title)s[%(channel)s].%(ext)s')
-            ),
-        })
+        # Vídeo MP4:
+        if opcao == "1":
+            ydl_opts.update({
+                # Historico de downloads mp4
+                'download_archive': 'downloaded_video.txt',
+                # Forçar vídeo MP4 + áudio M4A (100% compatíveis)
+                'format': '(bv*[ext=mp4]/bv*)+(ba[ext=m4a]/ba)/b',
+                # Garante merge final em MP4
+                'merge_output_format': 'mp4',
+                # Não extrair áudio
+                'outtmpl': (
+                    os.path.join(pasta_mp4, '%(playlist_title|single)s',
+                                '%(title)s[%(channel)s].%(ext)s')
+                ),
+            })
 
-    # Áudio MP3
-    else:
-        ydl_opts.update({
-            # Historico de downloads mp3
-            'download_archive': 'downloaded_audio.txt',
-            'format': 'bestaudio/best',
-            'postprocessors': [
-                {
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '192',
-                },
-                {
-                    'key': 'FFmpegMetadata',
-                }
-            ],
-            'outtmpl': (
-                os.path.join(pasta_mp3, '%(playlist_title|single)s',
-                             '%(channel)s - %(title)s.%(ext)s')
-            ),
-        })
+        # Áudio MP3
+        else:
+            ydl_opts.update({
+                # Historico de downloads mp3
+                'download_archive': 'downloaded_audio.txt',
+                'format': 'bestaudio/best',
+                'postprocessors': [
+                    {
+                        'key': 'FFmpegExtractAudio',
+                        'preferredcodec': 'mp3',
+                        'preferredquality': '192',
+                    },
+                    {
+                        'key': 'FFmpegMetadata',
+                    }
+                ],
+                'outtmpl': (
+                    os.path.join(pasta_mp3, '%(playlist_title|single)s',
+                                '%(channel)s - %(title)s.%(ext)s')
+                ),
+            })
 
-    # Download
-    try:
-        with YoutubeDL(ydl_opts) as ydl:
-            ydl.download([url])
-        status("✅ Download finalizado.")
-    except Exception as e:
-        status("❌ Erro durante o download:")
-        status(str(e))
-        
+        # Download
+        try:
+            with YoutubeDL(ydl_opts) as ydl:
+                ydl.download([url])
+            status("✅ Download finalizado.")
+        except Exception as e:
+            status("❌ Erro durante o download:")
+            status(str(e))
+            
 
-    # 🎵 Organização automática
-    if opcao == "2" and organizar_musica:
-        organizar_mp3(status)
-
+        # 🎵 Organização automática
+        if opcao == "2" and organizar_musica:
+            organizar_mp3(status)
+        pass
+    finally:
+        botao_baixar.config(state="normal")
 
 def organizar_mp3(status):
     status("🎶 Organizando músicas...")
@@ -200,8 +207,8 @@ def diagnostico():
     except Exception as e:
         print(f"❌ yt-dlp: erro ({e})")
 
-
 def iniciar_download():
+    botao_baixar.config(state="disabled")
     progress["value"] = 0
     label_status.config(text="Iniciando...")
 
@@ -244,31 +251,64 @@ def atualizar_opcoes():
         check_organizar.config(state="normal")
 
 
+def aplicar_tema_recursivo(widget):
+    # Frames, Labels, Buttons, etc.
+    try:
+        widget.configure(
+            bg=tema_atual["bg"],
+            fg=tema_atual["fg"]
+        )
+    except tk.TclError:
+        pass
+
+    # Entry
+    if isinstance(widget, tk.Entry):
+        widget.configure(
+            bg=tema_atual["entry_bg"],
+            fg=tema_atual["fg"],
+            insertbackground=tema_atual["fg"],
+            highlightbackground=tema_atual["highlight"],
+            highlightcolor=tema_atual["highlight"]
+        )
+
+    # Text (status_text)
+    if isinstance(widget, tk.Text):
+        widget.configure(
+            bg=tema_atual["entry_bg"],
+            fg=tema_atual["fg"],
+            insertbackground=tema_atual["fg"]
+        )
+
+    # Percorrer filhos
+    for filho in widget.winfo_children():
+        aplicar_tema_recursivo(filho)
+
+
 def aplicar_tema():
     janela.configure(bg=tema_atual["bg"])
+    aplicar_tema_recursivo(janela)
 
-    for widget in widgets_tema:
-        try:
-            widget.config(
-                bg=tema_atual["bg"],
-                fg=tema_atual["fg"],
-                selectcolor=tema_atual["bg"]
-            )
-        except:
-            pass
-
-    entry_url.config(
-        bg=tema_atual["entry_bg"],
-        fg=tema_atual["fg"],
-        insertbackground=tema_atual["fg"]
+    # Estilo da Progressbar
+    style = ttk.Style()
+    style.theme_use("clam")
+    style.configure(
+        "Custom.Horizontal.TProgressbar",
+        troughcolor=tema_atual["bg"],
+        background=tema_atual["highlight"]
     )
 
-    status_text.config(
-        bg=tema_atual["entry_bg"],
-        fg=tema_atual["fg"],
-        insertbackground=tema_atual["fg"]
-    )
+    # Estilo do ttk
+    style = ttk.Style()
+    style.theme_use("clam")
 
+    style.configure(
+        "TProgressbar",
+        troughcolor=tema_atual["bg"],
+        background=tema_atual["highlight"],
+        bordercolor=tema_atual["bg"],
+        lightcolor=tema_atual["highlight"],
+        darkcolor=tema_atual["highlight"]
+    )
 
 def alternar_tema():
     global tema_atual
@@ -298,17 +338,19 @@ frame_progresso.pack(pady=10)
 frame_botao.pack(pady=10)
 frame_log.pack(fill="both", expand=True, pady=5)
 
+
 # Mensagem do link
 label_titulo = tk.Label(
     frame_titulo,
     text="Cole o link do vídeo ou da playlist do YouTube abaixo 🎬",
-    font=("Segoe UI", 14, "bold")
+    font=FONTE_TITULO
 )
 label_titulo.pack()
 
 # Campo de link
 entry_url = tk.Entry(
     frame_link,
+    font=FONTE_PADRAO,
     width=70,
     relief="flat",
     highlightthickness=1,
@@ -324,7 +366,8 @@ rb_mp4 = tk.Radiobutton(
     text="Vídeo (MP4)",
     variable=formato,
     value="1",
-    command=atualizar_opcoes
+    command=atualizar_opcoes,
+    font=FONTE_PADRAO
 )
 rb_mp4.grid(row=0, column=0, padx=20, sticky="w")
 
@@ -333,7 +376,8 @@ rb_mp3 = tk.Radiobutton(
     text="Áudio (MP3)",
     variable=formato,
     value="2",
-    command=atualizar_opcoes
+    command=atualizar_opcoes,
+    font=FONTE_PADRAO
 )
 rb_mp3.grid(row=1, column=0, padx=20, sticky="w")
 
@@ -352,6 +396,7 @@ check_organizar.config(state="disabled")
 # Barra de progresso
 progress = ttk.Progressbar(
     frame_progresso,
+    style="Custom.Horizontal.TProgressbar",
     orient="horizontal",
     length=500,
     mode="determinate"
@@ -362,8 +407,7 @@ progress.pack(pady=5, padx=40)
 label_status = tk.Label(
     frame_progresso,
     text="Aguardando...",
-    fg="white",
-    bg="#1e1e1e"
+    font=FONTE_PADRAO
 )
 label_status.pack(pady=(0, 5))
 
@@ -372,6 +416,7 @@ botao_baixar = tk.Button(
     frame_botao,
     text="⬇ Baixar",
     command=iniciar_download,
+    font=FONTE_PADRAO,
     height=2,
     width=20
 )
@@ -388,19 +433,12 @@ botao_tema = tk.Button(
 botao_tema.pack(pady=5)
 
 # Status
-status_text = tk.Text(janela, height=8)
+status_text = tk.Text(
+    frame_log,
+    font=FONTE_PADRAO,
+    height=8
+)
 status_text.pack(fill="both", padx=10, pady=5)
-
-# Lista de widgets para aplicar o tema
-widgets_tema = [
-    label_titulo,
-    label_status,
-    botao_baixar,
-    botao_tema,
-    check_organizar,
-    rb_mp4,
-    rb_mp3
-]
 
 
 aplicar_tema()
