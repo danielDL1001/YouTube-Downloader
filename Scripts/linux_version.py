@@ -51,7 +51,13 @@ def baixar(url, opcao, organizar_musica, status):
 
         # Reconhecer quantidade de itens (vídeo ou playlist)
         try:
-            with YoutubeDL({'quiet': True}) as ydl:
+            info_opts = {
+                'quiet': True,
+                'ignoreerrors': True,
+                'raise_if_error': False,
+                'extract_flat': 'in_playlist'
+            }
+            with YoutubeDL(info_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
         except Exception as e:
             status(f"❌ Erro ao acessar vídeo/playlist:")
