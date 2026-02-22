@@ -84,9 +84,12 @@ def baixar(url, opcao, organizar_musica, status):
             'progress_hooks': [progresso_hook],
 
             # logs
-            'quiet': False,
-            'verbose': True,
-            'no_warnings': False,
+            'ignoreerrors': True,
+            'raise_if_error': False,
+            'skip_unavailable_fragments': True,
+            'quiet': True,
+            'nocheckcertificate': True,
+            'no_warnings': True,
 
             # rede / estabilidade
             'force_ipv4': True,

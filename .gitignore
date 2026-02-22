@@ -1,5 +1,7 @@
 .venv/
 cookies.txt
 downloaded_video.txt
+downloaded_audio.txt
 downloaded.txt
 __pycache__
+downloaded_audio.txt
