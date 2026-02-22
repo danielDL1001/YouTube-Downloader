@@ -55,6 +55,8 @@ def baixar(url, opcao, organizar_musica, status):
                 'quiet': True,
                 'ignoreerrors': True,
                 'raise_if_error': False,
+                'cachedir': False,
+                'extractor_retries': 3,
                 'extract_flat': 'in_playlist'
             }
             with YoutubeDL(info_opts) as ydl:
@@ -64,8 +66,12 @@ def baixar(url, opcao, organizar_musica, status):
             status(str(e))
             return
 
-        total = len(info['entries']) if 'entries' in info else 1
         concluidos = 0
+        if 'entries' in info and info['entries']:
+            entries = info['entries']
+            total = sum(1 for e in entries if e)
+        else:
+            total = 1
 
         def progresso_hook(d):
             nonlocal concluidos
@@ -93,6 +99,7 @@ def baixar(url, opcao, organizar_musica, status):
 
             # rede / estabilidade
             'force_ipv4': True,
+            'sleep_interval': 3,
             'retries': 10,
             'fragment_retries': 10,
             'skip_unavailable_fragments': True,
